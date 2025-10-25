@@ -1,0 +1,179 @@
+version: '3.8'
+
+# ==============================================
+# MyADs Platform - Docker Compose para Easypanel
+# ==============================================
+# Este arquivo é otimizado para deploy no Easypanel
+# Usa variáveis de ambiente do Easypanel
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: myads-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-adsdashboard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-adsdashboard}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-adsdashboard}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - myads-network
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: myads-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - myads-network
+
+  # Backend API (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: myads-backend
+    restart: unless-stopped
+    command: gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --access-logfile - --error-logfile -
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-adsdashboard}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-adsdashboard}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      - GOOGLE_ADS_DEVELOPER_TOKEN=${GOOGLE_ADS_DEVELOPER_TOKEN}
+      - GOOGLE_ADS_CLIENT_ID=${GOOGLE_ADS_CLIENT_ID}
+      - GOOGLE_ADS_CLIENT_SECRET=${GOOGLE_ADS_CLIENT_SECRET}
+      - GOOGLE_ADS_REDIRECT_URI=${GOOGLE_ADS_REDIRECT_URI}
+      - META_APP_ID=${META_APP_ID}
+      - META_APP_SECRET=${META_APP_SECRET}
+      - META_REDIRECT_URI=${META_REDIRECT_URI}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-MyADs Platform}
+      - ENVIRONMENT=production
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - myads-network
+    labels:
+      - "easypanel.expose=true"
+      - "easypanel.port=8000"
+      - "easypanel.domain=${BACKEND_DOMAIN}"
+
+  # Celery Worker
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: myads-celery-worker
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-adsdashboard}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-adsdashboard}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - GOOGLE_ADS_DEVELOPER_TOKEN=${GOOGLE_ADS_DEVELOPER_TOKEN}
+      - GOOGLE_ADS_CLIENT_ID=${GOOGLE_ADS_CLIENT_ID}
+      - GOOGLE_ADS_CLIENT_SECRET=${GOOGLE_ADS_CLIENT_SECRET}
+      - META_APP_ID=${META_APP_ID}
+      - META_APP_SECRET=${META_APP_SECRET}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - ENVIRONMENT=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - myads-network
+
+  # Celery Beat (Scheduler)
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: myads-celery-beat
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-adsdashboard}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-adsdashboard}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - myads-network
+
+  # Frontend (React + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+        - VITE_META_APP_ID=${VITE_META_APP_ID}
+    container_name: myads-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - myads-network
+    labels:
+      - "easypanel.expose=true"
+      - "easypanel.port=80"
+      - "easypanel.domain=${FRONTEND_DOMAIN}"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  myads-network:
+    driver: bridge
+
