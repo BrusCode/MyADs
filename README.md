@@ -1,6 +1,12 @@
-# 📊 Ads Dashboard Platform
+# 📊 MyADs Platform
 
-Plataforma completa de analytics e monitoramento para Google Ads e Meta Ads, com gestão de múltiplas empresas, usuários e permissões granulares.
+Plataforma completa de analytics e monitoramento para **Google Ads** e **Meta Ads**, com gestão de múltiplas empresas, usuários e permissões granulares.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6+-blue.svg)](https://www.typescriptlang.org/)
 
 ## 🚀 Funcionalidades
 
@@ -60,6 +66,29 @@ ads-dashboard-platform/
 ```
 
 ## 🚀 Deploy no Easypanel
+
+### 📌 Escolha sua Opção de Instalação
+
+Este repositório oferece **duas opções** de instalação no Easypanel:
+
+#### ⭐ Opção 1: Instalação Padrão (Branch: `main`) - **Recomendada para Produção**
+- ✅ Deploy de cada serviço individualmente
+- ✅ Maior controle e flexibilidade
+- ✅ Escalabilidade independente por serviço
+- ✅ Rollback independente
+- ✅ Monitoramento granular
+- 📖 **Guia completo**: [INSTALL_EASYPANEL.md - Opção 1](INSTALL_EASYPANEL.md#opção-1-instalação-padrão-branch-main)
+
+#### 🐳 Opção 2: Docker Compose (Branch: `docker-compose`) - **Rápido e Simples**
+- ✅ Deploy de toda a stack de uma vez
+- ✅ Configuração simplificada (15 minutos)
+- ✅ Ideal para desenvolvimento/staging
+- ✅ Fácil replicação de ambiente
+- 📖 **Guia completo**: [INSTALL_EASYPANEL.md - Opção 2](INSTALL_EASYPANEL.md#opção-2-instalação-via-docker-compose-branch-docker-compose)
+
+**📚 Documentação Completa de Instalação**: [INSTALL_EASYPANEL.md](INSTALL_EASYPANEL.md)
+
+---
 
 ### Pré-requisitos
 
@@ -235,7 +264,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 👥 Autores
 
-- **Seu Nome** - *Trabalho Inicial* - [seu-usuario](https://github.com/seu-usuario)
+- **BrusCode** - *Desenvolvimento* - [BrusCode](https://github.com/BrusCode)
 
 ## 🙏 Agradecimentos
 
@@ -245,7 +274,10 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 📞 Suporte
 
-Para suporte, envie um email para suporte@seudominio.com ou abra uma issue no GitHub.
+Para suporte:
+- 📧 **Email**: Abra uma issue no GitHub
+- 🐛 **Bugs**: [GitHub Issues](https://github.com/BrusCode/MyADs/issues)
+- 📖 **Documentação**: Veja os arquivos `.md` no repositório
 
 ---
 
